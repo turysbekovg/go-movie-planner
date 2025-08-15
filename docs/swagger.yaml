@@ -1,0 +1,79 @@
+basePath: /
+definitions:
+  service.FinalMovieData:
+    properties:
+      advice:
+        example: It is a very good choice! A high rated movie, which is recommended
+          to watch.
+        type: string
+      overview:
+        example: A thief who steals corporate secrets...
+        type: string
+      poster_url:
+        example: https://image.tmdb.org/...
+        type: string
+      rating:
+        example: 8.8
+        type: number
+      recommendations:
+        example:
+        - The Matrix
+        - Shutter Island
+        items:
+          type: string
+        type: array
+      release_date:
+        example: "2010-07-15"
+        type: string
+      title:
+        example: Inception
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server for a movie planner application.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Movie Night Planner API
+  version: "1.0"
+paths:
+  /movie/{title}:
+    get:
+      consumes:
+      - application/json
+      description: get details of a movie by its title from TMDb
+      parameters:
+      - description: Movie Title
+        in: path
+        name: title
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.FinalMovieData'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+        "503":
+          description: Service Unavailable
+          schema:
+            type: string
+      summary: Get movie details by title
+      tags:
+      - movies
+swagger: "2.0"
