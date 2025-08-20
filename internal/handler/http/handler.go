@@ -8,10 +8,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/turysbekovg/movie-planner/internal/errs"
-	"github.com/turysbekovg/movie-planner/internal/service"
+	"github.com/turysbekovg/movie-planner/internal/service" // адаптер зависит от ядра
 )
 
-// MovieHandler -> это структура обработчика
+// MovieHandler -> это структура обработчика. Является адаптером
 // Она содержит ссылку на сервис, чтобы иметь возможность вызывать его методы
 type MovieHandler struct {
 	service *service.MovieService
@@ -20,11 +20,11 @@ type MovieHandler struct {
 // NewMovieHandler -> конструктор, который создает MovieHanlder получая на вход экземпляр сервиса
 func NewMovieHandler(s *service.MovieService) *MovieHandler {
 	return &MovieHandler{
-		service: s,
+		service: s, // Сервис
 	}
 }
 
-// GetMovie -> метод, который будет привязан к URL
+// GetMovie -> метод, который будет привязан к URL. Это логика Адаптера
 
 // GetMovie godoc
 // @Summary      Get movie details by title

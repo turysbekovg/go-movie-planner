@@ -34,6 +34,7 @@ type tmdbMovie struct {
 }
 
 // TMDbAdapter -> структура, которая будет реализовывать интерфейс MovieProvider
+// это адаптер для технологии "TMDb REST API"
 type TMDbAdapter struct {
 	apiKey string       // для авторизации
 	client *http.Client // для выполнения HTTP calls

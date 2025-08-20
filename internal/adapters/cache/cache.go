@@ -34,15 +34,16 @@ type CacheAdapter struct {
 // NewCacheAdapter - конструктор для кэширующего адаптера
 func NewCacheAdapter(next ports.MovieProvider, ttl time.Duration) *CacheAdapter {
 	return &CacheAdapter{
-		next:  next,
-		ttl:   ttl,
+		next:  next, // Адаптер
+		ttl:   ttl,  // время для кэширования
 		cache: make(map[string]cacheEntry),
 	}
 }
 
 // --------------------------------------------------------------------------------------
 
-// SearchMovie реализует интерфейс MovieProvider, добавляя логику кэширования
+// SearchMovie реализует интерфейс MovieProvider, добавляя логику кэширования.
+// Реализует исходящий порт 'MovieProvider'
 func (a *CacheAdapter) SearchMovie(title string) (*ports.Movie, error) {
 	// 1. Проверка кэша
 
@@ -61,6 +62,8 @@ func (a *CacheAdapter) SearchMovie(title string) (*ports.Movie, error) {
 
 	// 3. Если в кэше нет записи -> идем к следующему провайдеру
 	log.Printf("Cache MISS for movie: %s. Fetching from next provider...", title)
+
+	// Делегирование вызова другому адаптеру
 	movie, err := a.next.SearchMovie(title)
 	if err != nil {
 		// Если настоящий провайдер вернул ошибку -> ее не кэшируем, а возвращаем

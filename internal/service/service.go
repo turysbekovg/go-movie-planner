@@ -1,21 +1,21 @@
 package service
 
 import (
-	"github.com/turysbekovg/movie-planner/internal/ports"
+	"github.com/turysbekovg/movie-planner/internal/ports" // ядро зависит от портов
 )
 
-// MovieService -> структура сервиса
+// MovieService -> ядро, структура сервиса
 // Она содержит ссылку на наш порт
 // сервис зависит от интерфейса, а не от конкретной реализации
 type MovieService struct {
 	provider ports.MovieProvider
 }
 
-// NewMovieService -> конструктор для сервиса
+// NewMovieService -> конструктор для ядра/сервиса
 // Он принимает на вход provider и сохраняет его внутри создаваемого сервиса
 // Получает того кто реализовал MovieProvider
 func NewMovieService(provider ports.MovieProvider) *MovieService {
-	return &MovieService{provider: provider}
+	return &MovieService{provider: provider} // Внутрь кладем адаптер (cacheAdapter)
 }
 
 // FinalMovieData -> финальный ответ который возвращается пользователю
@@ -25,7 +25,7 @@ type FinalMovieData struct {
 	Advice string `json:"advice" example:"It is a very good choice! A high rated movie, which is recommended to watch."`
 }
 
-// GetMovie -> главный метод сервиса
+// GetMovie -> главный метод сервиса (driving port/входящий порт)
 func (s *MovieService) GetMovie(title string) (*FinalMovieData, error) {
 	// 1. Вызываем метод SearchMovie у своего s.provider, чтобы получить базовые данные о фильме
 	movie, err := s.provider.SearchMovie(title)
