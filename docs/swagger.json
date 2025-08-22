@@ -18,9 +18,143 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
-        "/movie/{title}": {
+        "/auth/login": {
+            "post": {
+                "description": "Logs in a user and returns a JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login a user",
+                "parameters": [
+                    {
+                        "description": "User Credentials",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.authRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to generate token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Creates a new user account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "User Registration Info",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.authRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to register user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/movies": {
             "get": {
-                "description": "get details of a movie by its title from TMDb",
+                "description": "Retrieves a list of all movies. This endpoint is public.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "movies"
+                ],
+                "summary": "Get all movies",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ports.Movie"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get movies",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds a new movie to the database. Requires authentication.",
                 "consumes": [
                     "application/json"
                 ],
@@ -30,12 +164,64 @@
                 "tags": [
                     "movies"
                 ],
-                "summary": "Get movie details by title",
+                "summary": "Create a new movie",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Movie Title",
-                        "name": "title",
+                        "description": "Movie data to create",
+                        "name": "movie",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SwaggerMovieRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create movie",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/movies/{id}": {
+            "get": {
+                "description": "Retrieves movie details for a given ID. This endpoint is public.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "movies"
+                ],
+                "summary": "Get a movie by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Movie ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -47,20 +233,114 @@
                             "$ref": "#/definitions/service.FinalMovieData"
                         }
                     },
+                    "400": {
+                        "description": "Invalid movie ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "404": {
-                        "description": "Not Found",
+                        "description": "the requested resource was not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an existing movie's details. Requires authentication.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "movies"
+                ],
+                "summary": "Update a movie",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Movie ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Movie data to update",
+                        "name": "movie",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SwaggerMovieRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid movie ID or request body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Failed to update movie",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a movie from the database. Requires authentication.",
+                "tags": [
+                    "movies"
+                ],
+                "summary": "Delete a movie",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Movie ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid movie ID",
                         "schema": {
                             "type": "string"
                         }
                     },
-                    "503": {
-                        "description": "Service Unavailable",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete movie",
                         "schema": {
                             "type": "string"
                         }
@@ -70,13 +350,9 @@
         }
     },
     "definitions": {
-        "service.FinalMovieData": {
+        "http.SwaggerMovieRequest": {
             "type": "object",
             "properties": {
-                "advice": {
-                    "type": "string",
-                    "example": "It is a very good choice! A high rated movie, which is recommended to watch."
-                },
                 "overview": {
                     "type": "string",
                     "example": "A thief who steals corporate secrets..."
@@ -101,13 +377,120 @@
                 },
                 "release_date": {
                     "type": "string",
-                    "example": "2010-07-15"
+                    "example": "2010-07-16"
                 },
                 "title": {
                     "type": "string",
                     "example": "Inception"
                 }
             }
+        },
+        "http.authRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "ports.CustomDate": {
+            "type": "object",
+            "properties": {
+                "time.Time": {
+                    "type": "string"
+                }
+            }
+        },
+        "ports.Movie": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "overview": {
+                    "type": "string",
+                    "example": "A thief who steals corporate secrets..."
+                },
+                "poster_url": {
+                    "type": "string",
+                    "example": "https://image.tmdb.org/..."
+                },
+                "rating": {
+                    "type": "number",
+                    "example": 8.8
+                },
+                "recommendations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "The Matrix",
+                        "Shutter Island"
+                    ]
+                },
+                "release_date": {
+                    "$ref": "#/definitions/ports.CustomDate"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Inception"
+                }
+            }
+        },
+        "service.FinalMovieData": {
+            "type": "object",
+            "properties": {
+                "advice": {
+                    "type": "string",
+                    "example": "It is a very good choice! A high rated movie, which is recommended to watch."
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "overview": {
+                    "type": "string",
+                    "example": "A thief who steals corporate secrets..."
+                },
+                "poster_url": {
+                    "type": "string",
+                    "example": "https://image.tmdb.org/..."
+                },
+                "rating": {
+                    "type": "number",
+                    "example": 8.8
+                },
+                "recommendations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "The Matrix",
+                        "Shutter Island"
+                    ]
+                },
+                "release_date": {
+                    "$ref": "#/definitions/ports.CustomDate"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Inception"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and a JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

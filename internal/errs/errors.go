@@ -2,8 +2,6 @@ package errs
 
 import "errors"
 
-// Объявляем наши кастомные типы ошибок как переменные
-
 // ErrNotFound будет возвращаться, когда фильм не найден
 var ErrNotFound = errors.New("the requested resource was not found")
 

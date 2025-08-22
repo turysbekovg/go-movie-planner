@@ -1,40 +1,32 @@
 package service
 
 import (
+	"context"
+
 	"github.com/turysbekovg/movie-planner/internal/ports" // ядро зависит от портов
 )
 
-// MovieService -> ядро, структура сервиса
-// Она содержит ссылку на наш порт
-// сервис зависит от интерфейса, а не от конкретной реализации
+// MovieService -> ядро
 type MovieService struct {
-	provider ports.MovieProvider
+	repo ports.MovieRepository
 }
 
-// NewMovieService -> конструктор для ядра/сервиса
-// Он принимает на вход provider и сохраняет его внутри создаваемого сервиса
-// Получает того кто реализовал MovieProvider
-func NewMovieService(provider ports.MovieProvider) *MovieService {
-	return &MovieService{provider: provider} // Внутрь кладем адаптер (cacheAdapter)
+func NewMovieService(repo ports.MovieRepository) *MovieService {
+	return &MovieService{repo: repo}
 }
 
 // FinalMovieData -> финальный ответ который возвращается пользователю
-// включает все поля из ports.Movie и добавляет новое поле Advice
 type FinalMovieData struct {
 	ports.Movie
 	Advice string `json:"advice" example:"It is a very good choice! A high rated movie, which is recommended to watch."`
 }
 
-// GetMovie -> главный метод сервиса (driving port/входящий порт)
-func (s *MovieService) GetMovie(title string) (*FinalMovieData, error) {
-	// 1. Вызываем метод SearchMovie у своего s.provider, чтобы получить базовые данные о фильме
-	movie, err := s.provider.SearchMovie(title)
+func (s *MovieService) GetMovieByID(ctx context.Context, id int) (*FinalMovieData, error) {
+	movie, err := s.repo.GetMovieByID(ctx, id)
 	if err != nil {
-		// Если провайдер вернул ошибку, мы просто передаем ее дальше
 		return nil, err
 	}
 
-	// 2. Наша бизнес-логика: генерируем совет на основе рейтинга
 	var advice string
 	if movie.Rating >= 7.5 {
 		advice = "It is a very good choice! A high rated movie, which is recommended to watch."
@@ -44,11 +36,27 @@ func (s *MovieService) GetMovie(title string) (*FinalMovieData, error) {
 		advice = "A controversial choice. Not really recommended to watch, but you still can do so."
 	}
 
-	// 3. Собираем финальную структуру для ответа
+	// Собираем финальную структуру для ответа
 	finalData := &FinalMovieData{
-		Movie:  *movie, // Копируем все поля из полученной структуры movie
+		Movie:  *movie,
 		Advice: advice,
 	}
 
 	return finalData, nil
+}
+
+func (s *MovieService) CreateMovie(ctx context.Context, movie *ports.Movie) (int, error) {
+	return s.repo.CreateMovie(ctx, movie)
+}
+
+func (s *MovieService) GetAllMovies(ctx context.Context) ([]*ports.Movie, error) {
+	return s.repo.GetAllMovies(ctx)
+}
+
+func (s *MovieService) UpdateMovie(ctx context.Context, id int, movie *ports.Movie) error {
+	return s.repo.UpdateMovie(ctx, id, movie)
+}
+
+func (s *MovieService) DeleteMovie(ctx context.Context, id int) error {
+	return s.repo.DeleteMovie(ctx, id)
 }

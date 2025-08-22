@@ -1,11 +1,7 @@
 basePath: /
 definitions:
-  service.FinalMovieData:
+  http.SwaggerMovieRequest:
     properties:
-      advice:
-        example: It is a very good choice! A high rated movie, which is recommended
-          to watch.
-        type: string
       overview:
         example: A thief who steals corporate secrets...
         type: string
@@ -23,8 +19,78 @@ definitions:
           type: string
         type: array
       release_date:
-        example: "2010-07-15"
+        example: "2010-07-16"
         type: string
+      title:
+        example: Inception
+        type: string
+    type: object
+  http.authRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  ports.CustomDate:
+    properties:
+      time.Time:
+        type: string
+    type: object
+  ports.Movie:
+    properties:
+      id:
+        example: 1
+        type: integer
+      overview:
+        example: A thief who steals corporate secrets...
+        type: string
+      poster_url:
+        example: https://image.tmdb.org/...
+        type: string
+      rating:
+        example: 8.8
+        type: number
+      recommendations:
+        example:
+        - The Matrix
+        - Shutter Island
+        items:
+          type: string
+        type: array
+      release_date:
+        $ref: '#/definitions/ports.CustomDate'
+      title:
+        example: Inception
+        type: string
+    type: object
+  service.FinalMovieData:
+    properties:
+      advice:
+        example: It is a very good choice! A high rated movie, which is recommended
+          to watch.
+        type: string
+      id:
+        example: 1
+        type: integer
+      overview:
+        example: A thief who steals corporate secrets...
+        type: string
+      poster_url:
+        example: https://image.tmdb.org/...
+        type: string
+      rating:
+        example: 8.8
+        type: number
+      recommendations:
+        example:
+        - The Matrix
+        - Shutter Island
+        items:
+          type: string
+        type: array
+      release_date:
+        $ref: '#/definitions/ports.CustomDate'
       title:
         example: Inception
         type: string
@@ -43,17 +109,166 @@ info:
   title: Movie Night Planner API
   version: "1.0"
 paths:
-  /movie/{title}:
-    get:
+  /auth/login:
+    post:
       consumes:
       - application/json
-      description: get details of a movie by its title from TMDb
+      description: Logs in a user and returns a JWT token
       parameters:
-      - description: Movie Title
-        in: path
-        name: title
+      - description: User Credentials
+        in: body
+        name: credentials
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/http.authRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "401":
+          description: Invalid credentials
+          schema:
+            type: string
+        "500":
+          description: Failed to generate token
+          schema:
+            type: string
+      summary: Login a user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account
+      parameters:
+      - description: User Registration Info
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/http.authRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "500":
+          description: Failed to register user
+          schema:
+            type: string
+      summary: Register a new user
+      tags:
+      - auth
+  /movies:
+    get:
+      description: Retrieves a list of all movies. This endpoint is public.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ports.Movie'
+            type: array
+        "500":
+          description: Failed to get movies
+          schema:
+            type: string
+      summary: Get all movies
+      tags:
+      - movies
+    post:
+      consumes:
+      - application/json
+      description: Adds a new movie to the database. Requires authentication.
+      parameters:
+      - description: Movie data to create
+        in: body
+        name: movie
+        required: true
+        schema:
+          $ref: '#/definitions/http.SwaggerMovieRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Failed to create movie
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create a new movie
+      tags:
+      - movies
+  /movies/{id}:
+    delete:
+      description: Deletes a movie from the database. Requires authentication.
+      parameters:
+      - description: Movie ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid movie ID
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Failed to delete movie
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete a movie
+      tags:
+      - movies
+    get:
+      description: Retrieves movie details for a given ID. This endpoint is public.
+      parameters:
+      - description: Movie ID
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -61,19 +276,57 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/service.FinalMovieData'
+        "400":
+          description: Invalid movie ID
+          schema:
+            type: string
         "404":
-          description: Not Found
+          description: the requested resource was not found
+          schema:
+            type: string
+      summary: Get a movie by ID
+      tags:
+      - movies
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing movie's details. Requires authentication.
+      parameters:
+      - description: Movie ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Movie data to update
+        in: body
+        name: movie
+        required: true
+        schema:
+          $ref: '#/definitions/http.SwaggerMovieRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid movie ID or request body
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
           schema:
             type: string
         "500":
-          description: Internal Server Error
+          description: Failed to update movie
           schema:
             type: string
-        "503":
-          description: Service Unavailable
-          schema:
-            type: string
-      summary: Get movie details by title
+      security:
+      - BearerAuth: []
+      summary: Update a movie
       tags:
       - movies
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and a JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
